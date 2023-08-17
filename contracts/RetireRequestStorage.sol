@@ -2,10 +2,14 @@
 pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
+import "./ManageToken.sol";
 import "./Access.sol";
+import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
+import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
+import "./Utils.sol";
 import "./IRetire.sol";
 
-contract RetireRequestStorage is Access, IRetire {
+contract RetireRequestStorage is Access, SafeViewHTS, IRetire {
     constructor() {
         _setRole(msg.sender, OWNER);
     }

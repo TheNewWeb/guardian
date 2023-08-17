@@ -3,12 +3,12 @@ pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
 contract Access {
-    mapping(bytes32 => mapping(address => bool)) roleMap;
+    bytes32 constant OWNER = keccak256("OWNER");
 
-    bytes32 public constant OWNER = keccak256("OWNER");
+    mapping(bytes32 => mapping(address => bool)) roles;
 
     modifier role(bytes32 r) {
-        require(roleMap[r][msg.sender] == true, "You have no permissions");
+        require(roles[r][msg.sender], "NO_PERMISSIONS");
         _;
     }
 
@@ -17,14 +17,14 @@ contract Access {
     }
 
     function _setRole(address usr, bytes32 r) internal {
-        roleMap[r][usr] = true;
+        roles[r][usr] = true;
     }
 
     function _unsetRole(address usr, bytes32 r) internal {
-        roleMap[r][usr] = false;
+        roles[r][usr] = false;
     }
 
     function hasRole(address usr, bytes32 r) public view returns (bool) {
-        return roleMap[r][usr];
+        return roles[r][usr];
     }
 }

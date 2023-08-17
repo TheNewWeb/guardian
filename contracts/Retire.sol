@@ -2,23 +2,62 @@
 pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
+import "./IRetire.sol";
 import "./ManageToken.sol";
 import "./Access.sol";
-import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
-import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
-import "./IRetire.sol";
 import "./RetirePairStorage.sol";
 import "./RetireRequestStorage.sol";
+import "./RetireStorageManager.sol";
+import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
+import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
 
 contract Retire is Access, SafeViewHTS, IRetire {
-    bytes32 public constant ADMIN = keccak256("ADMIN");
+    event PairAdded(address indexed base, address indexed opposite);
+    event RetireRequested(
+        address indexed account,
+        address indexed base,
+        address indexed opposite
+    );
+    event RetireCompleted(
+        address indexed account,
+        address indexed base,
+        address indexed opposite
+    );
+
+    bytes32 constant ADMIN = keccak256("ADMIN");
+
+    RetireStorageManager storageManager;
+    RetirePairStorage pairStorage;
+    RetireRequestStorage requestStorage;
 
     constructor() {
         _setRole(msg.sender, ADMIN);
+        storageManager = new RetireStorageManager();
+        pairStorage = initPairStorage();
+        requestStorage = initRequestStorage();
     }
 
-    RetirePairStorage pairStorage = new RetirePairStorage();
-    RetireRequestStorage requestStorage = new RetireRequestStorage();
+    function initPairStorage() private returns (RetirePairStorage) {
+        (bool success, bytes memory result) = address(storageManager)
+            .delegatecall(
+                abi.encodeWithSelector(
+                    RetireStorageManager.pairStorage.selector
+                )
+            );
+        require(success);
+        return abi.decode(result, (RetirePairStorage));
+    }
+
+    function initRequestStorage() private returns (RetireRequestStorage) {
+        (bool success, bytes memory result) = address(storageManager)
+            .delegatecall(
+                abi.encodeWithSelector(
+                    RetireStorageManager.requestStorage.selector
+                )
+            );
+        require(success);
+        return abi.decode(result, (RetireRequestStorage));
+    }
 
     function requests() public view returns (Request[] memory) {
         return requestStorage.getRequests();
@@ -40,7 +79,19 @@ contract Retire is Access, SafeViewHTS, IRetire {
         pairStorage.removePair(base, opposite);
     }
 
-    function removeRequest(address account, address base, address opposite) external role(ADMIN) {
+    function clearPairs() external role(ADMIN) {
+        pairStorage = initPairStorage();
+    }
+
+    function clearRequests() external role(ADMIN) {
+        requestStorage = initRequestStorage();
+    }
+
+    function removeRequest(
+        address account,
+        address base,
+        address opposite
+    ) external role(ADMIN) {
         requestStorage.removeRequest(account, base, opposite);
     }
 
@@ -92,6 +143,7 @@ contract Retire is Access, SafeViewHTS, IRetire {
         if (!oppositeContract.isWiper()) {
             oppositeContract.requestWiper();
         }
+        emit PairAdded(base, opposite);
     }
 
     function ratio(address base, address opposite)
@@ -103,13 +155,31 @@ contract Retire is Access, SafeViewHTS, IRetire {
         return (pair.baseCount, pair.oppositeCount);
     }
 
-    function requestRatio(address account, address base, address opposite)
+    function requestRatio(
+        address account,
+        address base,
+        address opposite
+    )
         external
         view
-        returns (int64, int64, int64[] memory, int64[] memory)
+        returns (
+            int64,
+            int64,
+            int64[] memory,
+            int64[] memory
+        )
     {
-        Request memory request = requestStorage.getRequest(account, base, opposite);
-        return (request.baseCount, request.oppositeCount, request.baseSerials, request.oppositeSerials);
+        Request memory request = requestStorage.getRequest(
+            account,
+            base,
+            opposite
+        );
+        return (
+            request.baseCount,
+            request.oppositeCount,
+            request.baseSerials,
+            request.oppositeSerials
+        );
     }
 
     function _wipeCheck(
@@ -151,7 +221,7 @@ contract Retire is Access, SafeViewHTS, IRetire {
         }
     }
 
-    function approveWipe(
+    function approveRetire(
         address account,
         address base,
         address opposite
@@ -171,16 +241,17 @@ contract Retire is Access, SafeViewHTS, IRetire {
             request.baseSerials,
             request.oppositeSerials
         );
+        emit RetireCompleted(msg.sender, base, opposite);
     }
 
-    function wipe(
+    function retire(
         address base,
         address opposite,
         int64 baseCount,
         int64 oppositeCount,
         int64[] calldata baseSerials,
         int64[] calldata oppositeSerials
-    ) external {
+    ) external returns (bool) {
         Pair memory pair = pairStorage.getPair(base, opposite);
         int32 baseType = safeGetTokenType(base);
         int32 oppositeType = safeGetTokenType(opposite);
@@ -207,6 +278,7 @@ contract Retire is Access, SafeViewHTS, IRetire {
                 baseType == 1 ? baseSerials : new int64[](0),
                 oppositeType == 1 ? oppositeSerials : new int64[](0)
             );
+            emit RetireCompleted(msg.sender, base, opposite);
         } else {
             requestStorage.setRequest(
                 msg.sender,
@@ -217,6 +289,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
                 baseType == 1 ? baseSerials : new int64[](0),
                 oppositeType == 1 ? oppositeSerials : new int64[](0)
             );
+            emit RetireRequested(msg.sender, base, opposite);
         }
+        return pair.immediately;
     }
 }

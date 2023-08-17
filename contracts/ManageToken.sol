@@ -3,19 +3,21 @@ pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
 import "./Access.sol";
+import "./Retire.sol";
 import "./hedera-smart-contracts/safe-hts-precompile/SafeHTS.sol";
 
 contract ManageToken is SafeHTS, Access {
-    event AddedWiper(address indexed wiper);
-    event WiperRequest(address indexed wiper);
+    event WiperRemoved(address indexed wiper);
+    event WiperAdded(address indexed wiper);
+    event WiperRequested(address indexed wiper);
 
-    bytes32 public constant WIPER = keccak256("WIPER");
-    bytes32 public constant MANAGER = keccak256("MANAGER");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 constant WIPER = keccak256("WIPER");
+    bytes32 constant MANAGER = keccak256("MANAGER");
+    bytes32 constant ADMIN = keccak256("ADMIN");
 
     address[] public requests;
     mapping(address => uint256) requestPos;
-    mapping(address => bool) preventRequestMap;
+    mapping(address => bool) requestBan;
     bool public requestsDisabled;
 
     constructor(bool flag) {
@@ -33,15 +35,18 @@ contract ManageToken is SafeHTS, Access {
         delete requests;
     }
 
-    function rejectWiperRequest(address account, bool banned) public role(MANAGER) {
+    function rejectWiperRequest(address account, bool banned)
+        public
+        role(MANAGER)
+    {
         address request = requests[requestPos[account] - 1];
-        address last =  requests[requests.length - 1];
+        address last = requests[requests.length - 1];
         requestPos[last] = requestPos[request];
         delete requestPos[request];
         requests[requestPos[account] - 1] = requests[requests.length - 1];
         requests.pop();
         if (!banned) {
-            delete preventRequestMap[msg.sender];
+            delete requestBan[msg.sender];
         }
     }
 
@@ -51,39 +56,41 @@ contract ManageToken is SafeHTS, Access {
     }
 
     function requestWiper() public {
-        require(!preventRequestMap[msg.sender] && !hasRole(msg.sender, WIPER) && !requestsDisabled, "CAN_NOT_REQUEST");
-        preventRequestMap[msg.sender] = true;
+        require(
+            !requestBan[msg.sender] &&
+                !hasRole(msg.sender, WIPER) &&
+                !requestsDisabled,
+            "CAN_NOT_REQUEST"
+        );
+        requestBan[msg.sender] = true;
         requests.push(msg.sender);
-        emit WiperRequest(msg.sender);
+        emit WiperRequested(msg.sender);
     }
 
     function addWiper(address account) public role(MANAGER) {
         _setRole(account, WIPER);
-        emit AddedWiper(account);
+        emit WiperAdded(account);
     }
 
     function removeWiper(address account) public role(MANAGER) {
         _unsetRole(account, WIPER);
+        emit WiperRemoved(account);
     }
 
     function addManager(address account) public role(ADMIN) {
         _setRole(account, MANAGER);
-        addWiper(account);
     }
 
     function removeManager(address account) public role(ADMIN) {
         _unsetRole(account, MANAGER);
-        removeWiper(account);
     }
 
     function addAdmin(address account) external role(OWNER) {
         _setRole(account, ADMIN);
-        addManager(account);
     }
 
     function removeAdmin(address account) external role(OWNER) {
         _unsetRole(account, ADMIN);
-        removeManager(account);
     }
 
     function isAdmin() public view returns (bool) {
@@ -98,7 +105,11 @@ contract ManageToken is SafeHTS, Access {
         return hasRole(msg.sender, WIPER);
     }
 
-    function wipe(address token, address account, int64 amount) public role(WIPER) {
+    function wipe(
+        address token,
+        address account,
+        int64 amount
+    ) public role(WIPER) {
         safeWipeTokenAccount(token, account, amount);
     }
 
