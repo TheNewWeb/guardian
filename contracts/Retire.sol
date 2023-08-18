@@ -3,13 +3,13 @@ pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
 import "./IRetire.sol";
-import "./ManageToken.sol";
+import "./Wipe.sol";
 import "./Access.sol";
 import "./RetirePairStorage.sol";
 import "./RetireRequestStorage.sol";
 import "./RetireStorageManager.sol";
-import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
-import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
+import "./safe-hts-precompile/SafeViewHTS.sol";
+import "./hts-precompile/IHederaTokenService.sol";
 
 contract Retire is Access, SafeViewHTS, IRetire {
     event PairAdded(address indexed base, address indexed opposite);
@@ -75,8 +75,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
         _unsetRole(account, ADMIN);
     }
 
-    function removePair(address base, address opposite) external role(ADMIN) {
-        pairStorage.removePair(base, opposite);
+    function unsetPair(address base, address opposite) external role(ADMIN) {
+        pairStorage.unsetPair(base, opposite);
     }
 
     function clearPairs() external role(ADMIN) {
@@ -87,15 +87,19 @@ contract Retire is Access, SafeViewHTS, IRetire {
         requestStorage = initRequestStorage();
     }
 
-    function removeRequest(
+    function unsetRequest(
         address account,
         address base,
         address opposite
     ) external role(ADMIN) {
-        requestStorage.removeRequest(account, base, opposite);
+        requestStorage.unsetRequest(account, base, opposite);
     }
 
-    function getTokenContract(address token) private returns (ManageToken) {
+    function cancelRequest(address base, address opposite) external {
+        requestStorage.unsetRequest(msg.sender, base, opposite);
+    }
+
+    function tokenContract(address token) private returns (Wipe) {
         IHederaTokenService.KeyValue memory key = SafeViewHTS.safeGetTokenKey(
             token,
             8
@@ -107,16 +111,16 @@ contract Retire is Access, SafeViewHTS, IRetire {
         );
         return
             key.contractId != address(0)
-                ? ManageToken(key.contractId)
-                : ManageToken(key.delegatableContractId);
+                ? Wipe(key.contractId)
+                : Wipe(key.delegatableContractId);
     }
 
     function pairAvailable(address base, address opposite)
         public
         returns (bool)
     {
-        ManageToken baseContract = getTokenContract(base);
-        ManageToken oppositeContract = getTokenContract(opposite);
+        Wipe baseContract = tokenContract(base);
+        Wipe oppositeContract = tokenContract(opposite);
         return baseContract.isWiper() && oppositeContract.isWiper();
     }
 
@@ -134,8 +138,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
             oppositeCount,
             immediately
         );
-        ManageToken baseContract = getTokenContract(base);
-        ManageToken oppositeContract = getTokenContract(opposite);
+        Wipe baseContract = tokenContract(base);
+        Wipe oppositeContract = tokenContract(opposite);
 
         if (!baseContract.isWiper()) {
             baseContract.requestWiper();
@@ -198,8 +202,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
     }
 
     function _wipe(
-        ManageToken baseContract,
-        ManageToken oppositeContract,
+        Wipe baseContract,
+        Wipe oppositeContract,
         address base,
         address opposite,
         int64 baseCount,
@@ -232,8 +236,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
             opposite
         );
         _wipe(
-            getTokenContract(base),
-            getTokenContract(opposite),
+            tokenContract(base),
+            tokenContract(opposite),
             base,
             opposite,
             request.baseCount,
@@ -269,8 +273,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
         );
         if (pair.immediately) {
             _wipe(
-                getTokenContract(base),
-                getTokenContract(opposite),
+                tokenContract(base),
+                tokenContract(opposite),
                 base,
                 opposite,
                 baseType == 0 ? baseCount : int64(0),

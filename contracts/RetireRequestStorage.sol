@@ -2,17 +2,13 @@
 pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
-import "./ManageToken.sol";
 import "./Access.sol";
-import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
-import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
-import "./Utils.sol";
+import "./safe-hts-precompile/SafeViewHTS.sol";
+import "./hts-precompile/IHederaTokenService.sol";
 import "./IRetire.sol";
 
-contract RetireRequestStorage is Access, SafeViewHTS, IRetire {
-    constructor() {
-        _setRole(msg.sender, OWNER);
-    }
+contract RetireRequestStorage is Access, IRetire {
+    constructor() {}
 
     Request[] requests;
     mapping(address => mapping(address => mapping(address => uint256))) requestPos;
@@ -50,11 +46,12 @@ contract RetireRequestStorage is Access, SafeViewHTS, IRetire {
                 );
     }
 
-    function removeRequest(
+    function unsetRequest(
         address account,
         address base,
         address opposite
     ) public role(OWNER) {
+        require(requestPos[account][base][opposite] > 0, "NO_REQUEST");
         Request storage req = requests[requestPos[account][base][opposite] - 1];
         Request storage last = requests[requests.length - 1];
         requestPos[account][last.base][last.opposite] = requestPos[account][
@@ -84,7 +81,7 @@ contract RetireRequestStorage is Access, SafeViewHTS, IRetire {
             "INVALID_RATIO"
         );
         if (requestPos[account][base][opposite] > 0) {
-            removeRequest(account, base, opposite);
+            unsetRequest(account, base, opposite);
         }
         requests.push(
             Request(

@@ -2,17 +2,11 @@
 pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
-import "./ManageToken.sol";
 import "./Access.sol";
-import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
-import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
-import "./Utils.sol";
 import "./IRetire.sol";
 
-contract RetirePairStorage is Access, SafeViewHTS, IRetire {
-    constructor() {
-        _setRole(msg.sender, OWNER);
-    }
+contract RetirePairStorage is Access, IRetire {
+    constructor() {}
 
     Pair[] pairs;
     mapping(address => mapping(address => uint256)) pairPos;
@@ -21,7 +15,8 @@ contract RetirePairStorage is Access, SafeViewHTS, IRetire {
         return pairs;
     }
 
-    function removePair(address base, address opposite) public role(OWNER) {
+    function unsetPair(address base, address opposite) public role(OWNER) {
+        require(pairPos[base][opposite] > 0, "NO_PAIR");
         Pair storage pair = pairs[pairPos[base][opposite] - 1];
         Pair storage last = pairs[pairs.length - 1];
         pairPos[last.base][last.opposite] = pairPos[pair.base][pair.opposite];
@@ -45,7 +40,7 @@ contract RetirePairStorage is Access, SafeViewHTS, IRetire {
             "INVALID_RATIO"
         );
         if (pairPos[base][opposite] > 0) {
-            removePair(base, opposite);
+            unsetPair(base, opposite);
         }
         pairs.push(Pair(base, opposite, baseCount, oppositeCount, immediately));
         pairPos[base][opposite] = pairs.length;
@@ -76,20 +71,5 @@ contract RetirePairStorage is Access, SafeViewHTS, IRetire {
                     pair.oppositeCount,
                     pair.immediately
                 );
-    }
-
-    function _wipeCheck(
-        int64 baseCountPair,
-        int64 oppositeCountPair,
-        int64 baseCount,
-        int64 oppositeCount
-    ) private pure returns (bool) {
-        return
-            (baseCount >= baseCountPair) &&
-            (oppositeCount >= oppositeCountPair) &&
-            (((baseCountPair > 0 && oppositeCountPair > 0) &&
-                (baseCount / oppositeCount) ==
-                (baseCountPair / oppositeCountPair)) ||
-                (baseCountPair > 0 || oppositeCountPair > 0));
     }
 }

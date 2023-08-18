@@ -4,9 +4,9 @@ pragma experimental ABIEncoderV2;
 
 import "./Access.sol";
 import "./Retire.sol";
-import "./hedera-smart-contracts/safe-hts-precompile/SafeHTS.sol";
+import "./safe-hts-precompile/SafeHTS.sol";
 
-contract ManageToken is SafeHTS, Access {
+contract Wipe is SafeHTS, Access {
     event WiperRemoved(address indexed wiper);
     event WiperAdded(address indexed wiper);
     event WiperRequested(address indexed wiper);
@@ -20,25 +20,22 @@ contract ManageToken is SafeHTS, Access {
     mapping(address => bool) requestBan;
     bool public requestsDisabled;
 
-    constructor(bool flag) {
+    constructor() {
         _setRole(msg.sender, WIPER);
         _setRole(msg.sender, ADMIN);
         _setRole(msg.sender, MANAGER);
-        requestsDisabled = flag;
     }
 
     function setRequestsDisabled(bool flag) external role(ADMIN) {
         requestsDisabled = flag;
     }
 
-    function clearWiperRequests() external role(ADMIN) {
+    function clearRequests() external role(ADMIN) {
         delete requests;
     }
 
-    function rejectWiperRequest(address account, bool banned)
-        public
-        role(MANAGER)
-    {
+    function rejectRequest(address account, bool banned) public role(MANAGER) {
+        require(requestPos[account] > 0, "NO_REQUEST");
         address request = requests[requestPos[account] - 1];
         address last = requests[requests.length - 1];
         requestPos[last] = requestPos[request];
@@ -50,15 +47,15 @@ contract ManageToken is SafeHTS, Access {
         }
     }
 
-    function approveWiperRequest(address account) external role(MANAGER) {
+    function approveRequest(address account) external role(MANAGER) {
         addWiper(account);
-        rejectWiperRequest(account, false);
+        rejectRequest(account, false);
     }
 
     function requestWiper() public {
         require(
             !requestBan[msg.sender] &&
-                !hasRole(msg.sender, WIPER) &&
+                !_hasRole(msg.sender, WIPER) &&
                 !requestsDisabled,
             "CAN_NOT_REQUEST"
         );
@@ -94,15 +91,15 @@ contract ManageToken is SafeHTS, Access {
     }
 
     function isAdmin() public view returns (bool) {
-        return hasRole(msg.sender, ADMIN);
+        return _hasRole(msg.sender, ADMIN);
     }
 
     function isManager() public view returns (bool) {
-        return hasRole(msg.sender, MANAGER);
+        return _hasRole(msg.sender, MANAGER);
     }
 
     function isWiper() public view returns (bool) {
-        return hasRole(msg.sender, WIPER);
+        return _hasRole(msg.sender, WIPER);
     }
 
     function wipe(

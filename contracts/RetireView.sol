@@ -2,12 +2,12 @@
 pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
-import "./ManageToken.sol";
 import "./Access.sol";
-import "./hedera-smart-contracts/safe-hts-precompile/SafeViewHTS.sol";
-import "./hedera-smart-contracts/hts-precompile/IHederaTokenService.sol";
+import "./safe-hts-precompile/SafeViewHTS.sol";
+import "./hts-precompile/IHederaTokenService.sol";
 import "./Retire.sol";
 
+// Not necessary contract, but simplify decode 
 contract RetireView is IRetire {
     constructor() {}
 
@@ -65,6 +65,6 @@ contract RetireView is IRetire {
                 ? uint256(uint64(requests[i].oppositeCount))
                 : requests[i].oppositeSerials.length;
         }
-        return (bases, opposites, baseCounts, oppositeCounts);
+        return (accounts, bases, opposites, baseCounts, oppositeCounts);
     }
 }

@@ -24,7 +24,7 @@ contract Access {
         roles[r][usr] = false;
     }
 
-    function hasRole(address usr, bytes32 r) public view returns (bool) {
+    function _hasRole(address usr, bytes32 r) internal view returns (bool) {
         return roles[r][usr];
     }
 }
