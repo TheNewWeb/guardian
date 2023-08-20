@@ -30,11 +30,11 @@ contract Wipe is SafeHTS, Access {
         requestsDisabled = flag;
     }
 
-    function clearRequests() external role(ADMIN) {
+    function clear() external role(ADMIN) {
         delete requests;
     }
 
-    function rejectRequest(address account, bool banned) public role(MANAGER) {
+    function reject(address account, bool ban) public role(MANAGER) {
         require(requestPos[account] > 0, "NO_REQUEST");
         address request = requests[requestPos[account] - 1];
         address last = requests[requests.length - 1];
@@ -42,23 +42,32 @@ contract Wipe is SafeHTS, Access {
         delete requestPos[request];
         requests[requestPos[account] - 1] = requests[requests.length - 1];
         requests.pop();
-        if (!banned) {
+        if (!ban) {
             delete requestBan[msg.sender];
         }
     }
 
-    function approveRequest(address account) external role(MANAGER) {
+    function approve(address account) external role(MANAGER) {
         addWiper(account);
-        rejectRequest(account, false);
+        reject(account, false);
     }
 
-    function requestWiper() public {
-        require(
-            !requestBan[msg.sender] &&
-                !_hasRole(msg.sender, WIPER) &&
-                !requestsDisabled,
-            "CAN_NOT_REQUEST"
-        );
+    function setRequestBan(address account, bool flag) external role(MANAGER) {
+        requestBan[account] = flag;
+    }
+
+    modifier isNotBanned() {
+        require(!requestBan[msg.sender], "BANNED");
+        _;
+    }
+
+    modifier requestsIsNotDisabled() {
+        require(!requestsDisabled, "REQUESTS_DISABLED");
+        _;
+    }
+
+    function requestWiper() public isNotBanned requestsIsNotDisabled {
+        require(!_hasRole(msg.sender, WIPER), "HAS_WIPER");
         requestBan[msg.sender] = true;
         requests.push(msg.sender);
         emit WiperRequested(msg.sender);
@@ -100,6 +109,23 @@ contract Wipe is SafeHTS, Access {
 
     function isWiper() public view returns (bool) {
         return _hasRole(msg.sender, WIPER);
+    }
+
+    function permissions() public view returns (bytes memory) {
+        uint8 result = 0;
+        if (_hasRole(msg.sender, OWNER)) {
+            result += 4; // 1000
+        }
+        if (_hasRole(msg.sender, ADMIN)) {
+            result += 3; // 0100
+        }
+        if (_hasRole(msg.sender, MANAGER)) {
+            result += 2; // 0010
+        }
+        if (_hasRole(msg.sender, WIPER)) {
+            result += 1; // 0001
+        }
+        return abi.encode(result);
     }
 
     function wipe(

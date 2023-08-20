@@ -44,6 +44,7 @@ export class ContractConfigComponent implements OnInit, OnDestroy {
             color: '#9c27b0',
         },
     ];
+    type: string = 'wipe';
 
     constructor(
         public tagsService: TagsService,
@@ -59,9 +60,17 @@ export class ContractConfigComponent implements OnInit, OnDestroy {
             'contractId',
             'description',
             'tags',
+            'permissions',
             'operations',
             'retire'
         ];
+    }
+
+    onChangeType(event: any) {
+        this.pageIndex = 0;
+        this.pageSize = 100;
+        // this.router.navigate(['/schemas'], { queryParams: { type: this.type } });
+        // this.loadSchemas();
     }
 
     ngOnInit() {

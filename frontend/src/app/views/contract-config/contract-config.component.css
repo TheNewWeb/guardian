@@ -159,3 +159,66 @@
     border-right: 1px solid #dddddd;
     padding-left: 10px;
 }
+
+.table-container .mat-column-permissions {
+    width: 100px;
+    border-right: 1px solid #dddddd;
+    padding-left: 10px;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    padding: 14px 14px 14px 14px;
+    border-bottom: 1px solid #eee;
+    margin: 0;
+    height: 92px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.actions ::ng-deep button.mat-raised-button.mat-primary {
+    margin: 8px 10px 0 10px;
+}
+
+.toolbar-btn {
+    margin: 15px;
+    min-width: 120px;
+    cursor: pointer;
+    font-weight: 500;
+    text-align: left;
+    user-select: none;
+    position: relative;
+    border-radius: 8px;
+    padding: 0;
+    font-size: 14px;
+    padding-left: 48px !important;
+    padding-right: 30px;
+}
+
+.toolbar-btn mat-icon {
+    position: absolute;
+    left: 14px;
+    top: 10px;
+}
+
+.toolbar-btn.add mat-icon {
+    font-size: 30px;
+    left: 10px;
+    top: 7px;
+}
+
+.permissions {
+    font-weight: bold;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.permissions span[has="true"] {
+    color: darkgreen;
+}
+
+.permissions span[has="false"] {
+    color: darkred;
+}

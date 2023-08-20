@@ -52,6 +52,15 @@
             <div class="key-description">
                 The key which can wipe the token balance of an account. If empty, wipe is not possible.
             </div>
+            <div *ngIf="enableWipe">
+                <mat-form-field appearance="outline" class="immutable">
+                    <mat-label>Wipe Contract</mat-label>
+                    <mat-select formControlName="tokenType" (selectionChange)="onChangeType()">
+                        <mat-option></mat-option>
+                        <mat-option *ngFor="let contract of contracts" [value]="contract.contractId">{{contract.contractId}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
         </div>
         <div class="key-value">
             <div class="switch-btn">

@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
+import { ContractService } from 'src/app/services/contract.service';
 
 @Component({
     selector: 'app-token-configuration',
@@ -12,9 +13,10 @@ export class TokenConfigurationComponent implements OnInit {
     @Input('readonly') readonly?: any;
     @Input('hide-type') hideType: boolean = false;
 
+    contracts: any[] = [];
     ft: any;
 
-    constructor() { }
+    constructor(private contractService: ContractService) { }
 
     get notDraftToken(): boolean {
         return !this.dataForm?.get('draftToken')?.value;
@@ -65,6 +67,7 @@ export class TokenConfigurationComponent implements OnInit {
             }
         }
         this.onChangeType();
+        this.contractService.all().subscribe((result) => this.contracts = result);
     }
 
     onChangeType() {
