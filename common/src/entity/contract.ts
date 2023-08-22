@@ -1,6 +1,6 @@
 import { BeforeCreate, Entity, Property } from '@mikro-orm/core';
 import { BaseEntity } from '../models';
-import { ContractStatus } from '@guardian/interfaces';
+import { ContractStatus, ContractType } from '@guardian/interfaces';
 
 /**
  * Contract collection
@@ -26,16 +26,10 @@ export class Contract extends BaseEntity {
     owner?: string;
 
     /**
-     * Creator
-     */
-    @Property({ default: false })
-    isOwnerCreator: boolean = false;
-
-    /**
-     * Contract status
+     * Contract permissions
      */
     @Property({ nullable: true })
-    status?: ContractStatus;
+    permissions?: string;
 
     /**
      * Topic id
@@ -44,10 +38,14 @@ export class Contract extends BaseEntity {
     topicId?: string;
 
     /**
-     * Contract defaults
+     * Type
      */
-    @BeforeCreate()
-    setDefaults() {
-        this.status = this.status || ContractStatus.WAIT;
-    }
+    @Property({ nullable: true })
+    type?: ContractType;
+
+    /**
+     * Cache
+     */
+    @Property({ nullable: true, type: 'unknown'})
+    cache?: any
 }

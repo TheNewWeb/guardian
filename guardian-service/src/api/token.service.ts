@@ -92,7 +92,8 @@ export async function createHederaToken(token: any, user: IRootConfig) {
         owner: user.did,
         policyId: null,
         draftToken: false,
-        topicId: topic.topicId
+        topicId: topic.topicId,
+        wipeContractId: tokenData.wipeContractId,
     };
 }
 

@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
+import { ContractType } from '@guardian/interfaces';
 import { ContractService } from 'src/app/services/contract.service';
 
 @Component({
@@ -67,7 +68,7 @@ export class TokenConfigurationComponent implements OnInit {
             }
         }
         this.onChangeType();
-        this.contractService.all().subscribe((result) => this.contracts = result);
+        this.contractService.all(ContractType.WIPE).subscribe((result) => this.contracts = result);
     }
 
     onChangeType() {

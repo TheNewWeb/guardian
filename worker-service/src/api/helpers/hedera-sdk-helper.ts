@@ -12,6 +12,7 @@ import {
     ContractId,
     ContractInfo,
     ContractInfoQuery,
+    DelegateContractId,
     FileId,
     Hbar,
     HbarUnit,
@@ -45,7 +46,7 @@ import {
 import { HederaUtils, timeout } from './utils';
 import axios, { AxiosResponse } from 'axios';
 import { Environment } from './environment';
-import { GenerateUUIDv4, HederaResponseCode } from '@guardian/interfaces';
+import { ContractParamType, GenerateUUIDv4, HederaResponseCode } from '@guardian/interfaces';
 import Long from 'long';
 import { TransactionLogger } from './transaction-logger';
 import process from 'process';
@@ -282,7 +283,7 @@ export class HederaSDKHelper {
         adminKey: PrivateKey | null,
         kycKey: PrivateKey | null,
         freezeKey: PrivateKey | null,
-        wipeKey: PrivateKey | null
+        wipeKey: PrivateKey | ContractId | DelegateContractId | null
     ): Promise<string> {
         const client = this.client;
         let transaction = new TokenCreateTransaction()
@@ -1317,6 +1318,35 @@ export class HederaSDKHelper {
     }
 
     /**
+     * Parse contract parameters
+     * @param params Contract parameters
+     * @returns Contract parameters
+     */
+    private _parseContractParameters(
+        params: { type: ContractParamType; value: any }[]
+    ): ContractFunctionParameters {
+        let contractParams = new ContractFunctionParameters();
+        for (const param of params) {
+            switch (param.type) {
+                case ContractParamType.ADDRESS:
+                    contractParams = contractParams.addAddress(param.value);
+                    break;
+                case ContractParamType.BOOL:
+                    contractParams = contractParams.addBool(param.value);
+                    break;
+                case ContractParamType.INT64:
+                    contractParams = contractParams.addInt64(param.value);
+                    break;
+                case ContractParamType.INT64_ARRAY:
+                    contractParams = contractParams.addInt64Array(param.value);
+                    break;
+                default:
+            }
+        }
+        return contractParams;
+    }
+
+    /**
      * Query Contract Hedera
      *
      * @param {string | ContractId} contractId - Contract Id
@@ -1328,14 +1358,15 @@ export class HederaSDKHelper {
     @timeout(HederaSDKHelper.MAX_TIMEOUT)
     public async contractQuery(
         contractId: string | ContractId,
+        gas: number,
         functionName: string,
-        parameters: ContractFunctionParameters
+        parameters: { type: ContractParamType; value: any }[] = []
     ): Promise<ContractFunctionResult> {
         const client = this.client;
         const contractQueryTx = new ContractCallQuery()
             .setContractId(contractId)
-            .setGas(100000)
-            .setFunction(functionName, parameters)
+            .setGas(gas)
+            .setFunction(functionName, this._parseContractParameters(parameters))
         const contractQueryResult = await contractQueryTx.execute(client);
         return contractQueryResult;
     }
@@ -1353,24 +1384,17 @@ export class HederaSDKHelper {
     @timeout(HederaSDKHelper.MAX_TIMEOUT)
     public async contractCall(
         contractId: string | ContractId,
+        gas: number,
         functionName: string,
-        parameters: ContractFunctionParameters,
-        additionalKeys?: string[]
+        parameters: { type: ContractParamType; value: any }[] = [],
     ): Promise<boolean> {
         const client = this.client;
-        let contractExecuteTx: any = await new ContractExecuteTransaction()
+        const contractExecuteTx = await new ContractExecuteTransaction()
             .setContractId(contractId)
-            .setGas(2000000)
-            .setFunction(functionName, parameters)
+            .setGas(gas)
+            .setFunction(functionName, this._parseContractParameters(parameters))
             .setMaxTransactionFee(MAX_FEE)
             .freezeWith(client);
-        if (additionalKeys && additionalKeys.length) {
-            for (const key of additionalKeys) {
-                contractExecuteTx = await contractExecuteTx.sign(
-                    HederaUtils.parsPrivateKey(key, true)
-                );
-            }
-        }
         const contractExecuteSubmit = await contractExecuteTx.execute(client);
         const contractExecuteRx = await contractExecuteSubmit.getReceipt(
             client

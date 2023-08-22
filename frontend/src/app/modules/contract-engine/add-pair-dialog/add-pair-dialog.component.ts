@@ -38,7 +38,6 @@ export class AddPairDialogComponent {
         contractId: this.contractId,
     });
     loading: boolean = false;
-    existsPairs: any = [];
     tokens: any[] = [];
     baseTokens: any[] = [];
     oppositeTokens: any[] = [];
@@ -73,7 +72,6 @@ export class AddPairDialogComponent {
                     (item) => item.tokenId !== value
                 );
             }
-            this.existsPairs = [];
             if (!value && isOppositeToken) {
                 this.baseTokenCount.disable();
                 this.oppositeTokenCount.disable();
@@ -84,30 +82,6 @@ export class AddPairDialogComponent {
             if ((!value && !isOppositeToken) || (!tokenId && isOppositeToken)) {
                 return;
             }
-            this.loading = true;
-            this.contractService
-                .getPair(
-                    isOppositeToken ? tokenId : value,
-                    isOppositeToken ? value : tokenId
-                )
-                .subscribe(
-                    (result) => {
-                        this.loading = false;
-                        if (!result) {
-                            return;
-                        }
-                        this.existsPairs = result
-                            .filter((item: any) => item.baseTokenRate)
-                            .map(
-                                (item: any) =>
-                                    item.contractId +
-                                    (item.oppositeTokenRate
-                                        ? ` (${item.baseTokenRate}:${item.oppositeTokenRate})`
-                                        : '')
-                            );
-                    },
-                    () => (this.loading = false)
-                );
         };
     }
 

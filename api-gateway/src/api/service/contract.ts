@@ -65,8 +65,9 @@ export class ContractsApi {
             const guardians = new Guardians();
             const [contracts, count] = await guardians.getContracts(
                 user.parent || user.did,
+                req.query.type as any,
                 req.query.pageIndex as any,
-                req.query.pageSize as any
+                req.query.pageSize as any,
             );
             return res.setHeader('X-Total-Count', count).json(contracts);
         } catch (error) {
@@ -108,10 +109,10 @@ export class ContractsApi {
         await checkPermission(UserRole.STANDARD_REGISTRY)(req.user);
         try {
             const user = req.user;
-            const {description} = req.body;
+            const { description, type } = req.body;
             const guardians = new Guardians();
             return res.status(201).json(
-                await guardians.createContract(user.did, description)
+                await guardians.createContract(user.did, description, type)
             );
         } catch (error) {
             new Logger().error(error, ['API_GATEWAY']);
@@ -209,7 +210,7 @@ export class ContractsApi {
     @ApiOkResponse({
         description: 'Successful operation.',
         schema: {
-            type: 'boolean'
+            type: 'number'
         }
     })
     @ApiInternalServerErrorResponse({
@@ -226,7 +227,7 @@ export class ContractsApi {
             const user = req.user;
             const guardians = new Guardians();
             return res.json(
-                await guardians.updateStatus(user.did, req.params.contractId)
+                await guardians.checkContractPermissions(user.did, req.params.contractId)
             );
         } catch (error) {
             new Logger().error(error, ['API_GATEWAY']);
@@ -315,7 +316,7 @@ export class ContractsApi {
             $ref: getSchemaPath(InternalServerErrorDTO)
         }
     })
-    @Post('/:contractId/pair')
+    @Post('/retire/:contractId/pair')
     @HttpCode(HttpStatus.OK)
     async setPair(@Req() req, @Response() res): Promise<any> {
         await checkPermission(UserRole.STANDARD_REGISTRY)(req.user);
@@ -513,6 +514,71 @@ export class ContractsApi {
             const {requestId} = req.body;
             const guardians = new Guardians();
             return res.json(await guardians.retire(user.did, requestId));
+        } catch (error) {
+            new Logger().error(error, ['API_GATEWAY']);
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Get('/wipe/:contractId/requests')
+    @HttpCode(HttpStatus.CREATED)
+    async syncWipeRequests(@Req() req, @Response() res): Promise<any> {
+        await checkPermission(UserRole.STANDARD_REGISTRY)(req.user);
+        try {
+            const user = req.user;
+            const guardians = new Guardians();
+            return res.status(201).json(
+                await guardians.syncWipeRequests(user.did, req.params.contractId as any)
+            );
+        } catch (error) {
+            new Logger().error(error, ['API_GATEWAY']);
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Get('/retire/:contractId/pairs')
+    @HttpCode(HttpStatus.CREATED)
+    async syncRetirePairs(@Req() req, @Response() res): Promise<any> {
+        await checkPermission(UserRole.STANDARD_REGISTRY)(req.user);
+        try {
+            const user = req.user;
+            const guardians = new Guardians();
+            return res.status(201).json(
+                await guardians.syncRetirePairs(user.did, req.params.contractId as any)
+            );
+        } catch (error) {
+            new Logger().error(error, ['API_GATEWAY']);
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Get('/retire/:contractId/pair')
+    @HttpCode(HttpStatus.CREATED)
+    async syncRetirePair(@Req() req, @Response() res): Promise<any> {
+        await checkPermission(UserRole.STANDARD_REGISTRY)(req.user);
+        try {
+            const user = req.user;
+            const guardians = new Guardians();
+            return res.status(201).json(
+                await guardians.syncRetirePair(user.did, req.params.contractId as any, req.query.base as any, req.query.opposite as any)
+            );
+        } catch (error) {
+            new Logger().error(error, ['API_GATEWAY']);
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Post('/wipe/:contractId/requests')
+    @HttpCode(HttpStatus.CREATED)
+    async wipeRequestAction(@Req() req, @Response() res): Promise<any> {
+        await checkPermission(UserRole.STANDARD_REGISTRY)(req.user);
+        try {
+            const user = req.user;
+            const { description, type } = req.body;
+            const guardians = new Guardians();
+            return res.status(201).json(
+                await guardians.createContract(user.did, description, type)
+            );
         } catch (error) {
             new Logger().error(error, ['API_GATEWAY']);
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);

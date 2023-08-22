@@ -2,6 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api';
+import { ContractType } from '@guardian/interfaces';
+
+export enum WipeRequestActions {
+    APPROVE = 'approve',
+    REJECT = 'reject',
+    BAN = 'ban',
+}
 
 /**
  * Services for working with contracts.
@@ -12,26 +19,33 @@ export class ContractService {
 
     constructor(private http: HttpClient) {}
 
-    public all(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.url}/`);
+    public all(type?: ContractType): Observable<any[]> {
+        return type
+            ? this.http.get<any[]>(`${this.url}?type=${type}`)
+            : this.http.get<any[]>(`${this.url}/`);
     }
 
     public page(
+        type: ContractType,
         pageIndex?: number,
         pageSize?: number
     ): Observable<HttpResponse<any[]>> {
         if (Number.isInteger(pageIndex) && Number.isInteger(pageSize)) {
             return this.http.get<any>(
-                `${this.url}?pageIndex=${pageIndex}&pageSize=${pageSize}`,
+                `${this.url}?type=${type}&pageIndex=${pageIndex}&pageSize=${pageSize}`,
                 { observe: 'response' }
             );
         }
         return this.http.get<any>(`${this.url}`, { observe: 'response' });
     }
 
-    public create(description: string): Observable<HttpResponse<any>> {
+    public create(
+        description: string,
+        type: ContractType
+    ): Observable<HttpResponse<any>> {
         return this.http.post<any>(`${this.url}`, {
             description,
+            type,
         });
     }
 
@@ -65,7 +79,7 @@ export class ContractService {
         baseTokenCount: number,
         oppositeTokenCount: number
     ) {
-        return this.http.post<any>(`${this.url}/${contractId}/pair`, {
+        return this.http.post<any>(`${this.url}/retire/${contractId}/pair`, {
             baseTokenId,
             oppositeTokenId,
             baseTokenCount,
@@ -138,5 +152,32 @@ export class ContractService {
         return this.http.post<any>(`${this.url}/retire`, {
             requestId,
         });
+    }
+
+    public wipeRequests(contractId: string) {
+        return this.http.get<any>(`${this.url}/wipe/${contractId}/requests`);
+    }
+
+    public retireRequests(contractId: string) {
+        return this.http.get<any>(`${this.url}/wipe/${contractId}/requests`);
+    }
+
+    public retirePairs(contractId: string) {
+        return this.http.get<any>(`${this.url}/retire/${contractId}/pairs`);
+    }
+
+    public wipeRequestAction(
+        contractId: string,
+        account: string,
+        action: WipeRequestActions
+    ) {
+        return this.http.post<any[]>(
+            `${this.url}/wipe/${contractId}/requests`,
+            {
+                contractId,
+                account,
+                action,
+            }
+        );
     }
 }

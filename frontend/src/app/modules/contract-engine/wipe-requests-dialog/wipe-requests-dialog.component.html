@@ -1,0 +1,22 @@
+<app-dialog-wrapper (cancel)="onNoClick()" title="Wipe requests" [confirmVisible]="false" [syncVisible]="true"
+    [syncDate]="syncDate || 'none'" (sync)="sync($event)">
+    <ng-container *ngIf="requests?.length; else noRequests">
+        <div *ngFor="let request of requests" class="request">
+            <div class="profile">
+                <mat-icon class="profile__icon">person</mat-icon>
+                <span class="profile__id">{{request}}</span>
+            </div>
+            <div class="request__actions">
+                <button (click)="requestAction(request, WipeRequestActions.APPROVE)" mat-flat-button
+                    class="btn btn--approve">Approve</button>
+                <button (click)="requestAction(request, WipeRequestActions.REJECT)" mat-flat-button
+                    class="btn btn--reject">Reject</button>
+                <button (click)="requestAction(request, WipeRequestActions.BAN)" mat-flat-button
+                    class="btn btn--ban">Ban</button>
+            </div>
+        </div>
+    </ng-container>
+</app-dialog-wrapper>
+<ng-template #noRequests>
+    <div class="no-requests">Contract has no requests, try to sync.</div>
+</ng-template>

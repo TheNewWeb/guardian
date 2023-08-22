@@ -1,5 +1,5 @@
 import { Singleton } from '@helpers/decorators/singleton';
-import { ApplicationStates, CommonSettings, GenerateUUIDv4, IArtifact, IChainItem, IDidObject, ISchema, IToken, ITokenInfo, IUser, IVCDocument, IVPDocument, MessageAPI, SuggestionsOrderPriority } from '@guardian/interfaces';
+import { ApplicationStates, CommonSettings, ContractAPI, ContractType, GenerateUUIDv4, IArtifact, IChainItem, IDidObject, ISchema, IToken, ITokenInfo, IUser, IVCDocument, IVPDocument, MessageAPI, SuggestionsOrderPriority } from '@guardian/interfaces';
 import { NatsService } from '@guardian/common';
 import { NewTask } from './task-manager';
 
@@ -981,11 +981,47 @@ export class Guardians extends NatsService {
      */
     public async createContract(
         did: string,
-        description: string
+        description: string,
+        type: ContractType,
     ): Promise<any> {
-        return await this.sendMessage(MessageAPI.CREATE_CONTRACT, {
+        return await this.sendMessage(ContractAPI.CREATE_CONTRACT, {
             did,
             description,
+            type
+        });
+    }
+
+    public async syncWipeRequests(
+        did: string,
+        contractId: string,
+    ): Promise<any> {
+        return await this.sendMessage(ContractAPI.WIPE_SYNC_REQUESTS, {
+            did,
+            contractId,
+        });
+    }
+
+    public async syncRetirePairs(
+        did: string,
+        contractId: string,
+    ): Promise<any> {
+        return await this.sendMessage(ContractAPI.RETIRE_SYNC_PAIRS, {
+            did,
+            contractId,
+        });
+    }
+
+    public async syncRetirePair(
+        did: string,
+        contractId: string,
+        base: string,
+        opposite: string
+    ): Promise<any> {
+        return await this.sendMessage(ContractAPI.RETIRE_SYNC_PAIR, {
+            did,
+            contractId,
+            base,
+            opposite
         });
     }
 
@@ -1001,7 +1037,7 @@ export class Guardians extends NatsService {
         contractId: string,
         description: string
     ): Promise<any> {
-        return await this.sendMessage(MessageAPI.IMPORT_CONTRACT, {
+        return await this.sendMessage(ContractAPI.IMPORT_CONTRACT, {
             did,
             contractId,
             description,
@@ -1017,13 +1053,15 @@ export class Guardians extends NatsService {
      */
     public async getContracts(
         owner: string,
+        type: ContractType = ContractType.RETIRE,
         pageIndex?: any,
         pageSize?: any
     ): Promise<[any, number]> {
-        return await this.sendMessage(MessageAPI.GET_CONTRACT, {
+        return await this.sendMessage(ContractAPI.GET_CONTRACT, {
             owner,
             pageIndex,
             pageSize,
+            type,
         });
     }
 
@@ -1039,7 +1077,7 @@ export class Guardians extends NatsService {
         userId: string,
         contractId: string
     ): Promise<boolean> {
-        return await this.sendMessage(MessageAPI.ADD_CONTRACT_USER, {
+        return await this.sendMessage(ContractAPI.ADD_CONTRACT_USER, {
             did,
             userId,
             contractId,
@@ -1052,11 +1090,11 @@ export class Guardians extends NatsService {
      * @param contractId
      * @returns Operation Success
      */
-    public async updateStatus(
+    public async checkContractPermissions(
         did: string,
         contractId: string
-    ): Promise<boolean> {
-        return await this.sendMessage(MessageAPI.CHECK_CONTRACT_STATUS, {
+    ): Promise<number> {
+        return await this.sendMessage(ContractAPI.CHECK_CONTRACT_PERMISSIONS, {
             contractId,
             did,
         });
@@ -1080,7 +1118,7 @@ export class Guardians extends NatsService {
         baseTokenCount: number,
         oppositeTokenCount: number
     ): Promise<void> {
-        return await this.sendMessage(MessageAPI.ADD_CONTRACT_PAIR, {
+        return await this.sendMessage(ContractAPI.ADD_CONTRACT_PAIR, {
             did,
             contractId,
             baseTokenId,
@@ -1104,7 +1142,7 @@ export class Guardians extends NatsService {
         baseTokenId: string,
         oppositeTokenId: string
     ): Promise<any> {
-        return await this.sendMessage(MessageAPI.GET_CONTRACT_PAIR, {
+        return await this.sendMessage(ContractAPI.GET_CONTRACT_PAIR, {
             did,
             baseTokenId,
             oppositeTokenId,
@@ -1134,7 +1172,7 @@ export class Guardians extends NatsService {
         baseTokenSerials: number[],
         oppositeTokenSerials: number[]
     ): Promise<void> {
-        return await this.sendMessage(MessageAPI.ADD_RETIRE_REQUEST, {
+        return await this.sendMessage(ContractAPI.ADD_RETIRE_REQUEST, {
             did,
             contractId,
             baseTokenId,
@@ -1156,7 +1194,7 @@ export class Guardians extends NatsService {
         did: string,
         requestId: string
     ): Promise<void> {
-        return await this.sendMessage(MessageAPI.CANCEL_RETIRE_REQUEST, {
+        return await this.sendMessage(ContractAPI.CANCEL_RETIRE_REQUEST, {
             did,
             requestId,
         });
@@ -1178,7 +1216,7 @@ export class Guardians extends NatsService {
         pageIndex?: any,
         pageSize?: any
     ): Promise<[any, number]> {
-        return await this.sendMessage(MessageAPI.GET_RETIRE_REQUEST, {
+        return await this.sendMessage(ContractAPI.GET_RETIRE_REQUEST, {
             did,
             owner,
             contractId,
@@ -1194,7 +1232,7 @@ export class Guardians extends NatsService {
      * @returns Operation Success
      */
     public async retire(did: string, requestId: string): Promise<void> {
-        return await this.sendMessage(MessageAPI.RETIRE_TOKENS, {
+        return await this.sendMessage(ContractAPI.RETIRE_TOKENS, {
             did,
             requestId,
         });

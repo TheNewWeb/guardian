@@ -18,8 +18,8 @@ import { TagsService } from '../../services/tag.service';
 import { ContractService } from '../../services/contract.service';
 //modules
 import { VCViewerDialog } from '../../modules/schema-engine/vc-dialog/vc-dialog.component';
-import { RetireTokenDialogComponent } from 'src/app/components/retire-token-dialog/retire-token-dialog.component';
 import { noWhitespaceValidator } from 'src/app/validators/no-whitespace-validator';
+import { RetireTokenDialogComponent } from 'src/app/modules/contract-engine/retire-token-dialog/retire-token-dialog.component';
 
 enum OperationMode {
     None, Generate, Associate

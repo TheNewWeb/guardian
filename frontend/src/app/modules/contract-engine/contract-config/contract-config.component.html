@@ -13,8 +13,8 @@
         <div class="actions">
             <div style="padding: 6px 0px">
                 <mat-button-toggle-group [(ngModel)]="type" (change)="onChangeType($event)">
-                    <mat-button-toggle value="wipe">Wipe Contracts</mat-button-toggle>
-                    <mat-button-toggle value="retire">Retire Contracts</mat-button-toggle>
+                    <mat-button-toggle value="WIPE">Token wiping contracts</mat-button-toggle>
+                    <mat-button-toggle value="RETIRE">Token retirement contracts</mat-button-toggle>
                 </mat-button-toggle-group>
             </div>
             <div style="text-align: end">
@@ -55,46 +55,22 @@
                     <th mat-header-cell *matHeaderCellDef> Permissons </th>
                     <td mat-cell *matCellDef="let element">
                         <div class="permissions">
-                            <span matTooltip="Owner" [attr.has]="true">O</span>
-                            <span matTooltip="Admin" [attr.has]="true">A</span>
-                            <span matTooltip="Manager" *ngIf="type == 'wipe'" [attr.has]="true">M</span>
-                            <span matTooltip="Wiper" *ngIf="type == 'wipe'" [attr.has]="false">W</span>
-                            <button mat-icon-button class="refresh-action-btn"
-                                (click)="checkStatus(element.contractId, sync)"><mat-icon #sync>sync</mat-icon></button>
+                            <span matTooltip="Owner" [attr.has]="element.permissions[0] == true">O</span>
+                            <span matTooltip="Admin" [attr.has]="element.permissions[1] == true">A</span>
+                            <span matTooltip="Manager" *ngIf="type == 'WIPE'" [attr.has]="element.permissions[2] == true">M</span>
+                            <span matTooltip="Wiper" *ngIf="type == 'WIPE'" [attr.has]="element.permissions[3] == true">W</span>
+                            <app-refresh-btn (refresh)="checkStatus(element, $event)"></app-refresh-btn>
                         </div>
                     </td>
                 </ng-container>
                 <ng-container matColumnDef="operations">
-                    <th mat-header-cell *matHeaderCellDef>Operations</th>
+                    <th mat-header-cell *matHeaderCellDef></th>
                     <td mat-cell *matCellDef="let element">
-                        <div *ngIf="element.status === 'WAIT' && !element.isOwnerCreator"
-                            class="refresh-action-container" style="display: flex; justify-content: center;">
-                            <span>Wait to be added</span>
-                            <button mat-icon-button class="refresh-action-btn"
-                                (click)="checkStatus(element.contractId, sync)"><mat-icon #sync>sync</mat-icon></button>
-                        </div>
-                        <div *ngIf="element.status === 'APPROVED' && !element.isOwnerCreator"
-                            style="display: flex; justify-content: center;">
-                            <div class="action-btn" (click)="addPair(element.contractId)">
-                                <span>Add Pair</span>
-                                <mat-icon>swap_horizontal_circle</mat-icon>
-                            </div>
-                        </div>
-                        <div *ngIf="element.isOwnerCreator" style="display: flex; justify-content: center;">
+                        <div style="display: flex; justify-content: center;">
                             <select-menu-button class="btn-publish" (action)="onOperationAction($event, element)"
-                                [options]="operationsOptions">
+                                [options]="type === 'WIPE' ? wipeOperations: retireOperations">
                                 Operations
                             </select-menu-button>
-                        </div>
-                    </td>
-                </ng-container>
-                <ng-container matColumnDef="retire">
-                    <th mat-header-cell *matHeaderCellDef>Retirement Requests</th>
-                    <td mat-cell *matCellDef="let element">
-                        <div *ngIf="element.status === 'APPROVED' || element.isOwnerCreator" class="action-btn view-btn"
-                            [routerLink]="'pairs'" [queryParams]="{contractId: element.contractId}">
-                            <span>View</span>
-                            <mat-icon>visibility</mat-icon>
                         </div>
                     </td>
                 </ng-container>

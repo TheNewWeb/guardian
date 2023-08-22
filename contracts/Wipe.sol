@@ -15,7 +15,7 @@ contract Wipe is SafeHTS, Access {
     bytes32 constant MANAGER = keccak256("MANAGER");
     bytes32 constant ADMIN = keccak256("ADMIN");
 
-    address[] public requests;
+    address[] requestStorage;
     mapping(address => uint256) requestPos;
     mapping(address => bool) requestBan;
     bool public requestsDisabled;
@@ -26,25 +26,35 @@ contract Wipe is SafeHTS, Access {
         _setRole(msg.sender, MANAGER);
     }
 
+    function requests() external view role(MANAGER) returns (address[] memory) {
+        return requestStorage;
+    }
+
+    function banned() public view returns (bool) {
+        return requestBan[msg.sender];
+    }
+
+    function contractType() external pure returns (string memory) {
+        return "WIPE";
+    }
+
     function setRequestsDisabled(bool flag) external role(ADMIN) {
         requestsDisabled = flag;
     }
 
     function clear() external role(ADMIN) {
-        delete requests;
+        delete requestStorage;
     }
 
     function reject(address account, bool ban) public role(MANAGER) {
         require(requestPos[account] > 0, "NO_REQUEST");
-        address request = requests[requestPos[account] - 1];
-        address last = requests[requests.length - 1];
+        address request = requestStorage[requestPos[account] - 1];
+        address last = requestStorage[requestStorage.length - 1];
         requestPos[last] = requestPos[request];
         delete requestPos[request];
-        requests[requestPos[account] - 1] = requests[requests.length - 1];
-        requests.pop();
-        if (!ban) {
-            delete requestBan[msg.sender];
-        }
+        requestStorage[requestPos[account] - 1] = requestStorage[requestStorage.length - 1];
+        requestStorage.pop();
+        setRequestBan(msg.sender, ban);
     }
 
     function approve(address account) external role(MANAGER) {
@@ -52,7 +62,7 @@ contract Wipe is SafeHTS, Access {
         reject(account, false);
     }
 
-    function setRequestBan(address account, bool flag) external role(MANAGER) {
+    function setRequestBan(address account, bool flag) public role(MANAGER) {
         requestBan[account] = flag;
     }
 
@@ -67,10 +77,11 @@ contract Wipe is SafeHTS, Access {
     }
 
     function requestWiper() public isNotBanned requestsIsNotDisabled {
-        require(!_hasRole(msg.sender, WIPER), "HAS_WIPER");
-        requestBan[msg.sender] = true;
-        requests.push(msg.sender);
-        emit WiperRequested(msg.sender);
+        if (!_hasRole(msg.sender, WIPER) && requestPos[msg.sender] == 0) {
+            requestStorage.push(msg.sender);
+            requestPos[msg.sender] = requestStorage.length;
+            emit WiperRequested(msg.sender);
+        }
     }
 
     function addWiper(address account) public role(MANAGER) {
@@ -111,13 +122,13 @@ contract Wipe is SafeHTS, Access {
         return _hasRole(msg.sender, WIPER);
     }
 
-    function permissions() public view returns (bytes memory) {
+    function permissions() public view returns (uint8) {
         uint8 result = 0;
         if (_hasRole(msg.sender, OWNER)) {
-            result += 4; // 1000
+            result += 8; // 1000
         }
         if (_hasRole(msg.sender, ADMIN)) {
-            result += 3; // 0100
+            result += 4; // 0100
         }
         if (_hasRole(msg.sender, MANAGER)) {
             result += 2; // 0010
@@ -125,7 +136,7 @@ contract Wipe is SafeHTS, Access {
         if (_hasRole(msg.sender, WIPER)) {
             result += 1; // 0001
         }
-        return abi.encode(result);
+        return result;
     }
 
     function wipe(

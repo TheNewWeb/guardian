@@ -222,7 +222,7 @@ export class AsyncProgressComponent implements OnInit, OnDestroy {
                 }
                 break;
             case TaskAction.DELETE_POLICY:
-                this.router.navigate(['policies'],  {
+                this.router.navigate(['policy-viewer'],  {
                     replaceUrl: true,
                 });
                 break;
@@ -271,7 +271,7 @@ export class AsyncProgressComponent implements OnInit, OnDestroy {
             case TaskAction.WIZARD_CREATE_POLICY:
             case TaskAction.PUBLISH_POLICY:
             case TaskAction.DELETE_POLICY:
-                this.router.navigate(['policies'],  {
+                this.router.navigate(['policy-viewer'],  {
                     replaceUrl: true,
                 });
                 break;

@@ -22,6 +22,7 @@ import { StepTreeComponent } from './step-tree/step-tree.component';
 import { SeparateStepperComponent } from './separate-stepper/separate-stepper.component';
 import { NgxMaskModule } from 'ngx-mask';
 import { NewVersionsComponent } from './new-versions/new-versions.component';
+import { DataInputDialogComponent } from './data-input-dialog/data-input-dialog.component';
 
 @NgModule({
     declarations: [
@@ -41,6 +42,7 @@ import { NewVersionsComponent } from './new-versions/new-versions.component';
         StepTreeComponent,
         SeparateStepperComponent,
         NewVersionsComponent,
+        DataInputDialogComponent,
     ],
     imports: [
         CommonModule,

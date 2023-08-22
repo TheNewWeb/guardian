@@ -1,19 +1,3 @@
-.mat-dialog-content {
-    overflow: visible;
-}
-
-.mat-dialog-actions {
-    padding: 15px 0;
-}
-
-.description {
-    margin-bottom: 20px;
-}
-
-.g-dialog-actions-btn {
-    min-width: 210px !important;
-}
-
 .contract-form-base-token-count,
 .contract-form-opposite-token-count {
     padding-top: 12px;
@@ -156,7 +140,7 @@
         margin: 0 auto !important;
         padding: 0;
     }
-    
+
     .label-field .page-number {
         font-size: 18px;
         padding: 4px 10px;
@@ -196,7 +180,7 @@
         grid-template-columns: 1fr 1fr;
         column-gap: 10px;
         margin-top: 20px;
-        
+
         background-color: white;
         padding: 20px 0;
         position: fixed;

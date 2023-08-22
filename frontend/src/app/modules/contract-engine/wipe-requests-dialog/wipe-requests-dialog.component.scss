@@ -1,0 +1,48 @@
+.btn {
+    color: white;
+}
+.no-requests {
+    text-align: center;
+    font-size: 25px;
+    color: gray;
+    font-weight: bold;
+    line-height: 30px;
+}
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    &__icon {
+        font-size: 35px;
+        width: 35px;
+        height: 35px;
+    }
+    &__id {
+        font-size: 25px;
+        color: gray;
+        font-weight: bold;
+    }
+}
+.btn--approve {
+    background-color: darkgreen;
+}
+.btn--reject {
+    background-color: rgb(179, 3, 3);
+}
+.btn--ban {
+    background-color: darkred;
+}
+.request {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 10px;
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    &:not(:last-child) {
+        border-bottom: 1px solid lightgray;
+    }
+}

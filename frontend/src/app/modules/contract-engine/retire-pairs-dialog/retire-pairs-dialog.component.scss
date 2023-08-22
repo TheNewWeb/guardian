@@ -1,0 +1,64 @@
+.no-pairs {
+    text-align: center;
+    font-size: 25px;
+    color: gray;
+    font-weight: bold;
+    line-height: 30px;
+}
+.pair {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 10px;
+    &:not(:last-child) {
+        border-bottom: 1px solid lightgray;
+    }
+}
+.ratio {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 20px;
+    &__delimiter {
+    }
+    &__value {
+        color: gray;
+        font-weight: bold;
+    }
+}
+.status {
+    font-size: 20px;
+    font-weight: bold;
+    flex-basis: 117px;
+    &--available {
+        color: green;
+    }
+    &--not-available {
+        color: gray;
+    }
+}
+.tokens {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 20px;
+    &__delimiter {
+    }
+    &__token {
+        color: gray;
+        font-weight: bold;
+    }
+}
+:host ::ng-deep .pair-actions {
+    display: flex;
+    align-items: center;
+    mat-icon {
+        font-size: 25px;
+        width: 25px;
+        height: 25px;
+    }
+}
+
+.btn--remove {
+    color: red;
+}

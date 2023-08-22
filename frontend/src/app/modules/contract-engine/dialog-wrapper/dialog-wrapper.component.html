@@ -1,0 +1,25 @@
+<div class="g-dialog-content">
+    <div class="g-dialog-header">
+        <div class="g-dialog-cancel">
+            <div class="g-dialog-cancel-btn" (click)="cancel.emit()">
+                <mat-icon>close</mat-icon>
+            </div>
+        </div>
+        <div class="g-dialog-title">
+            {{title}}
+        </div>
+        <div class="g-dialog-actions">
+            <div class="sync" *ngIf="syncVisible">
+                <span class="sync__date">Last sync: {{syncDate | date:'medium'}}</span>
+                <app-refresh-btn (refresh)="sync.emit($event)"></app-refresh-btn>
+            </div>
+            <div class="g-dialog-actions-btn" *ngIf="confirmVisible" (click)="confirm.emit()"
+                [attr.disabled]="confirmDisabled">
+                {{confirmBtnLabel || 'Confirm'}}
+            </div>
+        </div>
+    </div>
+    <div class="g-dialog-body">
+        <ng-content></ng-content>
+    </div>
+</div>

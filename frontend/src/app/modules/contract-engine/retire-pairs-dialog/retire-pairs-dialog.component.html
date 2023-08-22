@@ -1,0 +1,31 @@
+<app-dialog-wrapper (cancel)="onNoClick()" title="Pairs" [confirmVisible]="false" [syncVisible]="true"
+    [syncDate]="syncDate || 'none'" (sync)="sync($event)">
+    <ng-container *ngIf="pairs?.length; else noPairs">
+        <div *ngFor="let pair of pairs" class="pair">
+            <div class="tokens">
+                <span class="tokens__token">{{(pair.baseSymbol)}}({{pair.base}})</span>
+                <span class="tokens__delimiter">:</span>
+                <span class="tokens__token">{{pair.oppositeSymbol}}({{pair.opposite}})</span>
+            </div>
+            <div class="ratio">
+                <span class="ratio__value">{{pair.baseCount | tokenCount:pair.baseDecimals}}</span>
+                <span class="ratio__delimiter">:</span>
+                <span class="ratio__value">{{pair.oppositeCount | tokenCount:pair.oppositeDecimals}}</span>
+            </div>
+            <div class="status">
+                <span class="status--available" *ngIf="pair.available">Available</span>
+                <span class="status--not-available" *ngIf="!pair.available">Not available</span>
+            </div>
+            <div>
+                Need approve: {{!pair.immediately}}
+            </div>
+            <div class="pair-actions">
+                <app-refresh-btn></app-refresh-btn>
+                <button class="btn--remove" mat-icon-button><mat-icon>delete</mat-icon></button>
+            </div>
+        </div>
+    </ng-container>
+</app-dialog-wrapper>
+<ng-template #noPairs>
+    <div class="no-pairs">Contract has no pairs, try to sync.</div>
+</ng-template>

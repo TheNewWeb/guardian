@@ -37,6 +37,21 @@ contract Retire is Access, SafeViewHTS, IRetire {
         requestStorage = initRequestStorage();
     }
 
+    function pairAvailable(address base, address opposite)
+        public
+        returns (bool)
+    {
+        return
+            base == address(0) ||
+            (opposite == address(0) &&
+                tokenContract(base).isWiper() &&
+                tokenContract(opposite).isWiper());
+    }
+
+    function contractType() external pure returns (string memory) {
+        return "RETIRE";
+    }
+
     function initPairStorage() private returns (RetirePairStorage) {
         (bool success, bytes memory result) = address(storageManager)
             .delegatecall(
@@ -100,28 +115,17 @@ contract Retire is Access, SafeViewHTS, IRetire {
     }
 
     function tokenContract(address token) private returns (Wipe) {
+        if (token == address(0)) {
+            return Wipe(address(0));
+        }
         IHederaTokenService.KeyValue memory key = SafeViewHTS.safeGetTokenKey(
             token,
             8
-        );
-        require(
-            key.contractId != address(0) ||
-                key.delegatableContractId != address(0),
-            "NO_CONTRACT"
         );
         return
             key.contractId != address(0)
                 ? Wipe(key.contractId)
                 : Wipe(key.delegatableContractId);
-    }
-
-    function pairAvailable(address base, address opposite)
-        public
-        returns (bool)
-    {
-        Wipe baseContract = tokenContract(base);
-        Wipe oppositeContract = tokenContract(opposite);
-        return baseContract.isWiper() && oppositeContract.isWiper();
     }
 
     function setPair(
@@ -131,6 +135,22 @@ contract Retire is Access, SafeViewHTS, IRetire {
         int64 oppositeCount,
         bool immediately
     ) external role(ADMIN) {
+        Wipe baseContract = tokenContract(base);
+        Wipe oppositeContract = tokenContract(opposite);
+        if (
+            baseContract != Wipe(address(0)) &&
+            !baseContract.isWiper() &&
+            !baseContract.banned()
+        ) {
+            baseContract.requestWiper();
+        }
+        if (
+            oppositeContract != Wipe(address(0)) &&
+            !oppositeContract.isWiper() &&
+            !oppositeContract.banned()
+        ) {
+            oppositeContract.requestWiper();
+        }
         pairStorage.setPair(
             base,
             opposite,
@@ -138,52 +158,7 @@ contract Retire is Access, SafeViewHTS, IRetire {
             oppositeCount,
             immediately
         );
-        Wipe baseContract = tokenContract(base);
-        Wipe oppositeContract = tokenContract(opposite);
-
-        if (!baseContract.isWiper()) {
-            baseContract.requestWiper();
-        }
-        if (!oppositeContract.isWiper()) {
-            oppositeContract.requestWiper();
-        }
         emit PairAdded(base, opposite);
-    }
-
-    function ratio(address base, address opposite)
-        external
-        view
-        returns (int64, int64)
-    {
-        Pair memory pair = pairStorage.getPair(base, opposite);
-        return (pair.baseCount, pair.oppositeCount);
-    }
-
-    function requestRatio(
-        address account,
-        address base,
-        address opposite
-    )
-        external
-        view
-        returns (
-            int64,
-            int64,
-            int64[] memory,
-            int64[] memory
-        )
-    {
-        Request memory request = requestStorage.getRequest(
-            account,
-            base,
-            opposite
-        );
-        return (
-            request.baseCount,
-            request.oppositeCount,
-            request.baseSerials,
-            request.oppositeSerials
-        );
     }
 
     function _wipeCheck(
@@ -198,12 +173,10 @@ contract Retire is Access, SafeViewHTS, IRetire {
             (((baseCountPair > 0 && oppositeCountPair > 0) &&
                 (baseCount / oppositeCount) ==
                 (baseCountPair / oppositeCountPair)) ||
-                (baseCountPair > 0 || oppositeCountPair > 0));
+                ((baseCountPair > 0 && oppositeCount == 0) || (oppositeCountPair > 0 && baseCount == 0)));
     }
 
     function _wipe(
-        Wipe baseContract,
-        Wipe oppositeContract,
         address base,
         address opposite,
         int64 baseCount,
@@ -211,6 +184,8 @@ contract Retire is Access, SafeViewHTS, IRetire {
         int64[] memory baseSerials,
         int64[] memory oppositeSerials
     ) private {
+        Wipe baseContract = tokenContract(base);
+        Wipe oppositeContract = tokenContract(opposite);
         if (baseCount > 0) {
             baseContract.wipe(base, msg.sender, baseCount);
         }
@@ -236,8 +211,6 @@ contract Retire is Access, SafeViewHTS, IRetire {
             opposite
         );
         _wipe(
-            tokenContract(base),
-            tokenContract(opposite),
             base,
             opposite,
             request.baseCount,
@@ -255,11 +228,10 @@ contract Retire is Access, SafeViewHTS, IRetire {
         int64 oppositeCount,
         int64[] calldata baseSerials,
         int64[] calldata oppositeSerials
-    ) external returns (bool) {
+    ) external {
         Pair memory pair = pairStorage.getPair(base, opposite);
         int32 baseType = safeGetTokenType(base);
         int32 oppositeType = safeGetTokenType(opposite);
-        require(pairAvailable(base, opposite), "PAIR_NOT_AVAILABLE");
         require(
             _wipeCheck(
                 pair.baseCount,
@@ -273,8 +245,6 @@ contract Retire is Access, SafeViewHTS, IRetire {
         );
         if (pair.immediately) {
             _wipe(
-                tokenContract(base),
-                tokenContract(opposite),
                 base,
                 opposite,
                 baseType == 0 ? baseCount : int64(0),
@@ -295,6 +265,16 @@ contract Retire is Access, SafeViewHTS, IRetire {
             );
             emit RetireRequested(msg.sender, base, opposite);
         }
-        return pair.immediately;
+    }
+
+    function permissions() public view returns (uint8) {
+        uint8 result = 0;
+        if (_hasRole(msg.sender, OWNER)) {
+            result += 2; // 10
+        }
+        if (_hasRole(msg.sender, ADMIN)) {
+            result += 1; // 01
+        }
+        return result;
     }
 }

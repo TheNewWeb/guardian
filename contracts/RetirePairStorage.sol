@@ -35,14 +35,23 @@ contract RetirePairStorage is Access, IRetire {
         bool immediately
     ) public role(OWNER) {
         require(
-            (base != address(0) && baseCount > 0) ||
-                (opposite != address(0) && oppositeCount > 0),
-            "INVALID_RATIO"
+            base != opposite &&
+                ((base != address(0) && baseCount > 0) ||
+                    (opposite != address(0) && oppositeCount > 0)),
+            "INVALID_SET_PAIR_PARAMS"
         );
         if (pairPos[base][opposite] > 0) {
             unsetPair(base, opposite);
         }
-        pairs.push(Pair(base, opposite, baseCount, oppositeCount, immediately));
+        pairs.push(
+            Pair(
+                base,
+                opposite,
+                base != address(0) ? baseCount : int64(0),
+                opposite != address(0) ? oppositeCount : int64(0),
+                immediately
+            )
+        );
         pairPos[base][opposite] = pairs.length;
         pairPos[opposite][base] = pairs.length;
     }

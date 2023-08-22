@@ -24,7 +24,8 @@ export class TokenDialog {
         changeSupply: new FormControl(true, [Validators.required]),
         enableFreeze: new FormControl(false, [Validators.required]),
         enableKYC: new FormControl(false, [Validators.required]),
-        enableWipe: new FormControl(true, [Validators.required])
+        enableWipe: new FormControl(true, [Validators.required]),
+        wipeContractId: new FormControl(''),
     });
     title: string = "New Token";
     description: string = "";
