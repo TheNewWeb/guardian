@@ -25,7 +25,7 @@
         "cronstrue": "^2.4.0",
         "crypto-browserify": "^3.12.1",
         "file-saver": "^2.0.5",
-        "js-yaml": "^4.1.0",
+        "js-yaml": "^4.1.1",
         "leader-line": "^1.0.7",
         "moment": "^2.29.2",
         "moment-timezone": "^0.5.43",
