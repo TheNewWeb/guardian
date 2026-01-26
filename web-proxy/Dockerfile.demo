@@ -22,7 +22,7 @@ COPY --link ./frontend/. ./
 RUN npm install interfaces.tgz && npm run build:demo
 
 # Stage 3: Create the final image
-FROM nginxinc/nginx-unprivileged:1.25.4-alpine as image
+FROM nginxinc/nginx-unprivileged:1.28.0-alpine as image
 
 # Copy config and built application from the build stage into the image
 COPY --link ./web-proxy/configs/demo.conf /etc/nginx/templates/default.conf.template
